@@ -1,0 +1,24 @@
+<mujoco>
+
+    <size njmax="500" nconmax="100" />
+    <compiler angle="radian" meshdir="meshes/" />
+    <option gravity="0 0 -9.81" timestep="0.002" cone="elliptic" impratio="20" />
+
+    <asset>
+        <mesh name="base" file="base.stl" />
+        <mesh name="shoulder" file="shoulder.stl" />
+        <mesh name="upperarm" file="upperarm.stl" />
+        <mesh name="forearm" file="forearm.stl" />
+        <mesh name="wrist1" file="wrist1.stl" />
+        <mesh name="wrist2" file="wrist2.stl" />
+        <mesh name="wrist3" file="wrist3.stl" />
+
+        <texture name="tex_plane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2" width="512" height="512"/>
+        <material name="mat_plane" reflectance="0.3" texture="tex_plane" texrepeat="1 1" texuniform="true"/>
+    </asset>
+
+    <!-- <contact> -->
+        <!-- <exclude body1="right_gripper_l_finger" body2="right_gripper_r_finger"/> -->
+    <!-- </contact> -->
+
+</mujoco>
