@@ -1,0 +1,31 @@
+<mujoco>
+  <include file="shared.xml"/>
+  <worldbody>
+    <!-- Lights -->
+    <light directional="true" ambient="0.2 0.2 0.2" diffuse="0.8 0.8 0.8" specular="0.3 0.3 0.3" castshadow="false" pos="0 0 4" dir="0 0 -1" name="light"/>
+
+    <!-- Floor -->
+    <geom name="floor" pos="0 0 0" size="20 20 0.000001" type="plane" material="mat_plane"/>
+
+    <!-- UR-Base -->
+    <body name="ur_base" pos="0 0 0.5">
+      <geom name="ur_base" pos="0 0 0" size="0.15 0.15 0.5" type="box" mass="2000"/>
+    </body>
+
+    <!-- Table -->
+    <body name="table" pos="0.7 0 0.4">
+      <geom name="table" pos="0 0 0" size="0.30 0.40 0.4" type="box" mass="2000" />
+    </body>
+
+    <body name="sponge" pos="0.70 0 0.8">
+      <freejoint/>
+      <composite type="box" count="3 3 3" spacing="0.025">
+          <skin texcoord="true" material="matsponge" rgba=".7 .7 .7 1"/>
+          <geom type="capsule" size=".005 0.01" rgba=".8 .2 .1 1"/>
+      </composite>
+    </body>
+
+    <!-- Robot -->
+    <include file="ur5_gripah_mujoco.xml"/>
+  </worldbody>
+</mujoco>
