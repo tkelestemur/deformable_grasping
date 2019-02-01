@@ -19,8 +19,8 @@
         <texture name="tex_plane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2" width="512" height="512"/>
         <material name="mat_plane" reflectance="0.3" texture="tex_plane" texrepeat="1 1" texuniform="true"/>
 
-        <texture name="texsponge" type="2d" file="textures/sponge.png"/>
-        <material name="matsponge" texture="texsponge" specular="0.3"/>
+        <texture name="tex_sponge" type="2d" file="textures/sponge.png"/>
+        <material name="mat_sponge" texture="tex_sponge" specular="0.3"/>
 
     </asset>
 
