@@ -102,12 +102,7 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset)
 // main function
 int main(int argc, const char** argv)
 {
-    // check command-line arguments
-    if( argc!=2 )
-    {
-        printf(" USAGE:  basic modelfile\n");
-        return 0;
-    }
+
 
     // activate software
     mj_activate("mjkey.txt");

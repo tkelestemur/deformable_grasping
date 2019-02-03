@@ -15,18 +15,21 @@ endif()
 
 include_directories(
     ${MUJOCO_DIR}/include
-#    /home/tarik/.mujoco/mujoco200_linux/include
 )
 
 add_executable(basic
     src/basic.cpp
 )
 
+# TODO: Make it cross-compile
 target_link_libraries(basic
-    ${MUJOCO_DIR}/bin/libmujoco200.so
-    ${MUJOCO_DIR}/bin/libglew.so
-    ${MUJOCO_DIR}/bin/libglfw.so.3
-    GL)
+    ${MUJOCO_DIR}/bin/libmujoco200.dylib
+    ${MUJOCO_DIR}/bin/libglfw.3.dylib)
 
+#target_link_libraries(basic
+#        ${MUJOCO_DIR}/bin/libmujoco200.so
+#        ${MUJOCO_DIR}/bin/libglew.so
+#        ${MUJOCO_DIR}/bin/libglfw.so.3
+#        GL)
 
 
