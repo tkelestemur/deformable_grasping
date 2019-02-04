@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.5)
 project(ur_mujoco)
 add_compile_options(-std=c++11)
 
-#set(USE_GL 1)
 
 set(MUJOCO_DIR "$ENV{MUJOCO200_HOME}")
 
@@ -14,22 +13,26 @@ endif()
 
 
 include_directories(
+    include
     ${MUJOCO_DIR}/include
 )
+
+add_library(spnav_wrapper src/spnav_wrapper.cpp)
+target_link_libraries(spnav_wrapper spnav X11)
 
 add_executable(basic
     src/basic.cpp
 )
 
 # TODO: Make it cross-compile
-target_link_libraries(basic
-    ${MUJOCO_DIR}/bin/libmujoco200.dylib
-    ${MUJOCO_DIR}/bin/libglfw.3.dylib)
-
 #target_link_libraries(basic
-#        ${MUJOCO_DIR}/bin/libmujoco200.so
-#        ${MUJOCO_DIR}/bin/libglew.so
-#        ${MUJOCO_DIR}/bin/libglfw.so.3
-#        GL)
+#    ${MUJOCO_DIR}/bin/libmujoco200.dylib
+#    ${MUJOCO_DIR}/bin/libglfw.3.dylib)
+
+target_link_libraries(basic
+        ${MUJOCO_DIR}/bin/libmujoco200.so
+        ${MUJOCO_DIR}/bin/libglew.so
+        ${MUJOCO_DIR}/bin/libglfw.so.3
+        GL spnav_wrapper)
 
 

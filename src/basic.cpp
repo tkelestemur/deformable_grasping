@@ -1,18 +1,12 @@
-/*  Copyright © 2018, Roboti LLC
-
-    This file is licensed under the MuJoCo Resource License (the "License").
-    You may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        https://www.roboti.us/resourcelicense.txt
-*/
-
+#include <iostream>
 
 #include "mujoco.h"
 #include "glfw3.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
+
+#include <ur_mujoco/spnav_wrapper.h>
 
 
 // MuJoCo data structures
@@ -24,6 +18,7 @@ mjvScene scn;                       // abstract scene
 mjrContext con;                     // custom GPU context
 
 // mouse interaction
+bool paused = false;
 bool button_left = false;
 bool button_middle = false;
 bool button_right =  false;
@@ -39,6 +34,10 @@ void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods)
     {
         mj_resetData(m, d);
         mj_forward(m, d);
+    }
+    else if(act==GLFW_PRESS && key==GLFW_KEY_SPACE)
+    {
+        paused = !paused;
     }
 }
 
@@ -105,16 +104,15 @@ int main(int argc, const char** argv)
 
 
     // activate software
-    mj_activate("mjkey.txt");
+    const char* mjKeyPath = std::getenv("MUJOCO_KEY");
+    std::cout << "MuJoCo Path:  " << mjKeyPath << std::endl;
+    mj_activate(mjKeyPath);
 
     // load and compile model
-    char error[1000] = "Could not load binary model";
-    if( strlen(argv[1])>4 && !strcmp(argv[1]+strlen(argv[1])-4, ".mjb") )
-        m = mj_loadModel(argv[1], 0);
-    else
-        m = mj_loadXML(argv[1], 0, error, 1000);
-    if( !m )
-        mju_error_s("Load model error: %s", error);
+    const char* modelPath = "/home/tarik/projects/ur_mujoco/models/data_collection.xml";
+    m = mj_loadXML(modelPath, NULL, NULL, 0);
+    if(!m) mju_error("Model cannot be loaded");
+
 
     // make data
     d = mj_makeData(m);
@@ -124,7 +122,7 @@ int main(int argc, const char** argv)
         mju_error("Could not initialize GLFW");
 
     // create window, make OpenGL context current, request v-sync
-    GLFWwindow* window = glfwCreateWindow(1200, 900, "Demo", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1200, 900, "", NULL, NULL);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
@@ -144,16 +142,21 @@ int main(int argc, const char** argv)
     glfwSetMouseButtonCallback(window, mouse_button);
     glfwSetScrollCallback(window, scroll);
 
+    if(!spnav_wrapper::open_spnav())
+        mju_error("Can't open SpaceNavigator device!");
+
     // run main loop, target real-time simulation and 60 fps rendering
     while( !glfwWindowShouldClose(window) )
     {
-        // advance interactive simulation for 1/60 sec
-        //  Assuming MuJoCo can simulate faster than real-time, which it usually can,
-        //  this loop will finish on time for the next frame to be rendered at 60 fps.
-        //  Otherwise add a cpu timer and exit this loop when it is time to render.
+        spnav_wrapper::motion motion = spnav_wrapper::get_event();
+//        std::cout << "pos ctrl : " << motion.pos[0] << " " << motion.pos[1] << " " << motion.pos[2] << std::endl;
+
         mjtNum simstart = d->time;
-        while( d->time - simstart < 1.0/60.0 )
+        while(!paused && d->time - simstart < 1.0/60.0 )
             mj_step(m, d);
+
+//        Visualize joint torques here joint names : wide_finger_joint, narrow_finger_joint
+
 
         // get framebuffer viewport
         mjrRect viewport = {0, 0, 0, 0};
