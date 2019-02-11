@@ -4,6 +4,11 @@
     <compiler angle="radian" meshdir="meshes/" />
     <option gravity="0 0 -9.81" timestep="0.002" cone="elliptic" impratio="20" />
 
+
+    <visual>
+        <scale framelength="2.0" framewidth="0.05"/>
+    </visual>
+
     <asset>
         <mesh name="base" file="base.stl" />
         <mesh name="shoulder" file="shoulder.stl" />

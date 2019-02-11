@@ -18,7 +18,10 @@
             <geom name="table" pos="0 0 0" size="0.30 0.40 0.4" type="box" mass="2000"/>
         </body>
 
-        <body name="sponge" pos="0.70 0 0.8">
+        <!-- Robot -->
+        <include file="ur5_gripah.xml"/>
+
+        <body name="sponge" pos="0.70 0 0.825">
             <freejoint/>
             <composite type="box" count="3 3 3" spacing="0.025">
                 <skin texcoord="true" material="mat_sponge" rgba=".7 .7 .7 1"/>
@@ -26,8 +29,7 @@
             </composite>
         </body>
 
-        <!-- Robot -->
-        <include file="ur5_gripah.xml"/>
+
     </worldbody>
 
     <actuator>
