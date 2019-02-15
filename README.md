@@ -8,3 +8,7 @@
 * `cd ur_mujoco && mkdir build && cd build`
 * `cmake .. && make`
 * `./basic`
+
+#### TODO
+- [ ] Write a grasping procedure for data collection
+- [ ] Write object-oriented code

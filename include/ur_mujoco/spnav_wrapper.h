@@ -12,9 +12,11 @@ namespace spnav_wrapper {
         std::vector<double> pos;
         std::vector<double> rot;
         std::vector<int> buttons;
+        bool received_event;
     };
 
     bool open_spnav();
+    void close_spnav();
     motion get_event();
 }
 

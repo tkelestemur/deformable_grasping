@@ -4,6 +4,14 @@
     <compiler angle="radian" meshdir="meshes/" />
     <option gravity="0 0 -9.81" timestep="0.002" cone="elliptic" impratio="20" />
 
+    <default>
+        <light castshadow="false" diffuse="1 1 1" />
+        <joint armature="0.01" frictionloss="1" damping="1" />
+        <!--<motor gear="0.8"/>-->
+        <velocity kv="50"/>
+        <!--<position kp="5"/>-->
+    </default>
+
 
     <visual>
         <scale framelength="2.0" framewidth="0.05"/>
