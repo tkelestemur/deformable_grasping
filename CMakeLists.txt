@@ -12,10 +12,10 @@ endif()
 
 find_package(Eigen3 REQUIRED)
 
-include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(
     include
     ${MUJOCO_DIR}/include
+    ${EIGEN3_INCLUDE_DIR}
 )
 
 #add_library(spnav_wrapper src/spnav_wrapper.cpp)
@@ -25,15 +25,17 @@ add_executable(env
     src/env.cpp
 )
 
-# TODO: Make it cross-compile
-#target_link_libraries(basic
-#    ${MUJOCO_DIR}/bin/libmujoco200.dylib
-#    ${MUJOCO_DIR}/bin/libglfw.3.dylib)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+  target_link_libraries(env
+          ${MUJOCO_DIR}/bin/libmujoco200.so
+          ${MUJOCO_DIR}/bin/libglew.so
+          ${MUJOCO_DIR}/bin/libglfw.so.3
+          GL)
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  target_link_libraries(env
+      ${MUJOCO_DIR}/bin/libmujoco200.dylib
+      ${MUJOCO_DIR}/bin/libglfw.3.dylib)
+endif()
 
-target_link_libraries(env
-        ${MUJOCO_DIR}/bin/libmujoco200.so
-        ${MUJOCO_DIR}/bin/libglew.so
-        ${MUJOCO_DIR}/bin/libglfw.so.3
-        GL)
 
 

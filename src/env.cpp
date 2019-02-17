@@ -152,7 +152,7 @@ void init_mujoco(void) {
     mj_activate(mjKeyPath);
 
     // load and compile model
-    const char *modelPath = "/home/tarik/projects/ur_mujoco/models/env.xml";
+    const char *modelPath = "../models/env.xml";
     std::cout << "Model Path: " << modelPath << std::endl;
     m = mj_loadXML(modelPath, NULL, NULL, 0);
     if (!m) mju_error("Model cannot be loaded");
