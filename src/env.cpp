@@ -1,3 +1,7 @@
+// =============================== //
+//  Developed by Tarik Kelestemur  //
+// =============================== //
+
 #include <iostream>
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -176,7 +180,7 @@ void init_rendering(void) {
         mju_error("Could not initialize GLFW");
 
     // create window, make OpenGL context current, request v-sync
-    window = glfwCreateWindow(960, 1080, "", NULL, NULL);
+    window = glfwCreateWindow(1400, 1000, "", NULL, NULL);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
@@ -190,8 +194,9 @@ void init_rendering(void) {
 
     // data figure settings
     mjv_defaultFigure(&figdata);
-    strcpy(figdata.title, "Finger Joint Torque");
+    strcpy(figdata.title, "Wide-Finger Joint Torque");
     figdata.flg_extend = false;
+//    figdata.flg_legend = true;
     figdata.figurergba[2] = 0.2f;
     figdata.figurergba[3] = 0.5f;
     figdata.gridsize[0] = 2;
@@ -206,17 +211,21 @@ void init_rendering(void) {
     figdata.linergb[0][1] = 0.0;
     figdata.linergb[0][2] = 0.0;
 
+
+    strcpy(figdata.linename[0], "actuator torque");
+    strcpy(figdata.linename[1], "external torque");
+//    strcpy(figdata.linename[2], "inverse torque");
     figdata.linergb[1][0] = 0.0;
     figdata.linergb[1][1] = 1.0;
     figdata.linergb[1][2] = 0.0;
     figdata.linewidth[0] = 1.0;
-    figdata.linewidth[1] = 1.5;
+    figdata.linewidth[1] = 1.0;
 
     for(int i=0; i<mjMAXLINEPNT; i++ ){
         figdata.linedata[0][2*i] = (float)-i;
         figdata.linedata[1][2*i] = (float)-i;
+//        figdata.linedata[2][2*i] = (float)-i;
     }
-
 
     // create scene and context
     mjv_makeScene(m, &scn, 2000);
@@ -237,16 +246,20 @@ void update_fig_data(){
     // shift data
     int pnt = mjMIN(201, figdata.linepnt[0]+1);
     int pnt_2 = mjMIN(201, figdata.linepnt[1]+1);
+//    int pnt_3 = mjMIN(201, figdata.linepnt[2]+1);
     for(int i=pnt-1; i>0; i-- ){
         figdata.linedata[0][2*i+1] = figdata.linedata[0][2*i-1];
         figdata.linedata[1][2*i+1] = figdata.linedata[1][2*i-1];
+//        figdata.linedata[2][2*i+1] = figdata.linedata[2][2*i-1];
     }
 
     // assign new
     figdata.linepnt[0] = pnt;
-    figdata.linepnt[1] = pnt;
+    figdata.linepnt[1] = pnt_2;
+//    figdata.linepnt[2] = pnt_3;
     figdata.linedata[0][1] = (float)d->qfrc_actuator[wideFingerJntIdx];
     figdata.linedata[1][1] = (float)d->qfrc_passive[wideFingerJntIdx];
+//    figdata.linedata[2][1] = (float)d->qfrc_inverse[wideFingerJntIdx];
 }
 
 void render() {
@@ -272,6 +285,7 @@ void render() {
 
     // process pending GUI events, call GLFW callbacks
     glfwPollEvents();
+
 }
 
 void kill(void) {
@@ -335,7 +349,7 @@ int main(int argc, const char **argv) {
                 }
                 // gripper control
                 for (int i = 6; i < 8; i++) {
-                    d->qfrc_applied[i] = d->qfrc_bias[i];
+//                    d->qfrc_applied[i] = d->qfrc_bias[i];
                     d->ctrl[i] = gripperCmd[i-6];
                 }
 

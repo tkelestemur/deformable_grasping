@@ -12,3 +12,17 @@
 #### TODO
 - [ ] Write a grasping procedure for data collection
 - [ ] Write object-oriented code
+
+
+
+\
+Please cite the following this repo if you use it for your research.
+```
+@misc{URMuJoCo,
+  author = {Tarik Kelestemur},
+  title = {A MuJoCo Model with Universal Robot and Custom Gripper},
+  year = {2017},
+  howpublished = {\url{https://github.com/tkelestemur/ur_mujoco}}
+}
+
+```
