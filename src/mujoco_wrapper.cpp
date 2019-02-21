@@ -1,7 +1,9 @@
 #include "mujoco_wrapper.h"
-#include <boost/bind.hpp>
+//#include <boost/bind.hpp>
 
-MuJoCoWrapper::MuJoCoWrapper(){
+MuJoCoWrapper::MuJoCoWrapper(bool view) {
+
+    view_flag = view;
     // activate software
     const char *mjKeyPath = std::getenv("MUJOCO_KEY");
     std::cout << "Key Path: " << mjKeyPath << std::endl;
@@ -18,16 +20,20 @@ MuJoCoWrapper::MuJoCoWrapper(){
 
     std::cout << "# of DoF: " << m->nv << " # of Actuators: " << m->nu << " # of Coordinates: " << m->nq << std::endl;
 
-    std::cout << "Joint names: " << std::endl;
-    for (int i = 0; i < 6; ++i) {
-        std::cout << mj_id2name(m, mjOBJ_JOINT, i) << std::endl;
+    if (view_flag) {
+        mujoco_viewer::m = m;
+        initRendering();
     }
+
+    num_control_steps = 10;
+    num_arm_dof = 6;
+    num_gripper_dof = 2;
 }
 
-MuJoCoWrapper::~MuJoCoWrapper(){
+MuJoCoWrapper::~MuJoCoWrapper() {
     //free visualization storage
-    mjv_freeScene(&scn);
-    mjr_freeContext(&con);
+    mjv_freeScene(&mujoco_viewer::scn);
+    mjr_freeContext(&mujoco_viewer::con);
 
     // free MuJoCo model and data, deactivate
     mj_deleteData(d);
@@ -40,10 +46,10 @@ MuJoCoWrapper::~MuJoCoWrapper(){
 #endif
 }
 
-bool MuJoCoWrapper::initRendering(){
+bool MuJoCoWrapper::initRendering() {
 
     // init GLFW
-    if (!glfwInit()){
+    if (!glfwInit()) {
         mju_error("Could not initialize GLFW");
         return false;
     }
@@ -54,12 +60,12 @@ bool MuJoCoWrapper::initRendering(){
     glfwSwapInterval(1);
 
     // initialize visualization data structures
-    mjv_defaultCamera(&cam);
-    cam.distance = 5;
-    mjv_defaultOption(&opt);
-    opt.frame = mjFRAME_WORLD; // Show the world frame
-    mjv_defaultScene(&scn);
-    mjr_defaultContext(&con);
+    mjv_defaultCamera(&mujoco_viewer::cam);
+    mujoco_viewer::cam.distance = 5;
+    mjv_defaultOption(&mujoco_viewer::opt);
+    mujoco_viewer::opt.frame = mjFRAME_WORLD; // Show the world frame
+    mjv_defaultScene(&mujoco_viewer::scn);
+    mjr_defaultContext(&mujoco_viewer::con);
 
     // data figure settings
     mjv_defaultFigure(&figdata);
@@ -90,25 +96,26 @@ bool MuJoCoWrapper::initRendering(){
     figdata.linewidth[0] = 1.0;
     figdata.linewidth[1] = 1.0;
 
-    for(int i=0; i<mjMAXLINEPNT; i++ ){
-        figdata.linedata[0][2*i] = (float)-i;
-        figdata.linedata[1][2*i] = (float)-i;
+    for (int i = 0; i < mjMAXLINEPNT; i++) {
+        figdata.linedata[0][2 * i] = (float) -i;
+        figdata.linedata[1][2 * i] = (float) -i;
 //        figdata.linedata[2][2*i] = (float)-i;
     }
 
     // create scene and context
-    mjv_makeScene(m, &scn, 2000);
-    mjr_makeContext(m, &con, mjFONTSCALE_150);
+    mjv_makeScene(m, &mujoco_viewer::scn, 2000);
+    mjr_makeContext(m, &mujoco_viewer::con, mjFONTSCALE_150);
 
     // install GLFW mouse and keyboard callbacks
-    glfwSetKeyCallback(window, keyboard);
-    glfwSetCursorPosCallback(window, move);
-    glfwSetMouseButtonCallback(window, mouse_button);
-    glfwSetScrollCallback(window, scroll);
+    glfwSetKeyCallback(window, mujoco_viewer::keyboard);
+    glfwSetCursorPosCallback(window, mujoco_viewer::mouseMove);
+    glfwSetMouseButtonCallback(window, mujoco_viewer::mouseButton);
+    glfwSetScrollCallback(window, mujoco_viewer::scroll);
 
+    return true;
 }
 
-void MuJoCoWrapper::reset(){
+void MuJoCoWrapper::reset() {
     mj_resetData(m, d);
     double armQInit[6] = {0.0, -0.90, 0.90, 0.0, mjPI / 2, -mjPI / 2};
     for (int j = 0; j < 6; j++) {
@@ -119,121 +126,77 @@ void MuJoCoWrapper::reset(){
     mj_forward(m, d);
 }
 
-// keyboard callback
-void MuJoCoWrapper::keyboard(GLFWwindow *window, int key, int scancode, int act, int mods) {
+void MuJoCoWrapper::updateFigData() {
+//    figdata.linepnt[0] = 100;
+    int wideFingerJntIdx = mj_name2id(m, mjOBJ_JOINT, "wide_finger_joint");
+    int narrowFingerJntIdx = mj_name2id(m, mjOBJ_JOINT, "narrow_finger_joint");
 
-    if (act == GLFW_PRESS) {
-        switch (key) {
-            case GLFW_KEY_BACKSPACE:
-                reset();
-                break;
-            case GLFW_KEY_SPACE:
-                paused = !paused;
-                break;
-            case GLFW_KEY_PAGE_UP:
-                eefCmd[2] = transEEFVel;
-                break;
-            case GLFW_KEY_PAGE_DOWN:
-                eefCmd[2] = -transEEFVel;
-                break;
-            case GLFW_KEY_UP:
-                eefCmd[0] = transEEFVel;
-                break;
-            case GLFW_KEY_DOWN:
-                eefCmd[0] = -transEEFVel;
-                break;
-            case GLFW_KEY_LEFT:
-                eefCmd[1] = transEEFVel;
-                break;
-            case GLFW_KEY_RIGHT:
-                eefCmd[1] = -transEEFVel;
-                break;
-            case GLFW_KEY_C:
-                gripperCmd[0] = -0.1;
-                gripperCmd[1] = -0.1;
-                break;
-            case GLFW_KEY_O:
-                gripperCmd[0] = 0.1;
-                gripperCmd[1] = 0.1;
-                break;
-            default:
-                mju_warning("Unkown keyboard command!");
-                break;
-        }
-    } else if (act == GLFW_RELEASE) {
-        mju_zero(eefCmd, 6);
-        mju_zero(gripperCmd, 2);
+    // shift data
+    int pnt = mjMIN(201, figdata.linepnt[0] + 1);
+    int pnt_2 = mjMIN(201, figdata.linepnt[1] + 1);
+//    int pnt_3 = mjMIN(201, figdata.linepnt[2]+1);
+    for (int i = pnt - 1; i > 0; i--) {
+        figdata.linedata[0][2 * i + 1] = figdata.linedata[0][2 * i - 1];
+        figdata.linedata[1][2 * i + 1] = figdata.linedata[1][2 * i - 1];
+//        figdata.linedata[2][2*i+1] = figdata.linedata[2][2*i-1];
     }
+
+    // assign new
+    figdata.linepnt[0] = pnt;
+    figdata.linepnt[1] = pnt_2;
+//    figdata.linepnt[2] = pnt_3;
+    figdata.linedata[0][1] = (float) d->qfrc_actuator[wideFingerJntIdx];
+    figdata.linedata[1][1] = (float) d->qfrc_passive[wideFingerJntIdx];
+//    figdata.linedata[2][1] = (float)d->qfrc_inverse[wideFingerJntIdx];
 }
 
-void MuJoCoWrapper::mouseButton(GLFWwindow *window, int button, int act, int mods){
-    // update button state
-    button_left = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
-    button_middle = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS);
-    button_right = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS);
+void MuJoCoWrapper::render() {
+    if (!view_flag || glfwWindowShouldClose(window)) {
+        exit(1);
+    }
 
-    // update mouse position
-    glfwGetCursorPos(window, &lastx, &lasty);
-}
-void MuJoCoWrapper::mouseMove(GLFWwindow *window, double xpos, double ypos){
-    // no buttons down: nothing to do
-    if (!button_left && !button_middle && !button_right)
-        return;
-
-    // compute mouse displacement, save
-    double dx = xpos - lastx;
-    double dy = ypos - lasty;
-    lastx = xpos;
-    lasty = ypos;
-
-    // get current window size
-    int width, height;
-    glfwGetWindowSize(window, &width, &height);
-
-    // get shift key state
-    bool mod_shift = (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
-                      glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
-
-    // determine action based on mouse button
-    mjtMouse action;
-    if (button_right)
-        action = mod_shift ? mjMOUSE_MOVE_H : mjMOUSE_MOVE_V;
-    else if (button_left)
-        action = mod_shift ? mjMOUSE_ROTATE_H : mjMOUSE_ROTATE_V;
-    else
-        action = mjMOUSE_ZOOM;
-
-    // move camera
-    mjv_moveCamera(m, action, dx / height, dy / height, &scn, &cam);
-}
-void MuJoCoWrapper::scroll(GLFWwindow *window, double xoffset, double yoffset){
-    // emulate vertical mouse motion = 5% of window height
-    mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05 * yoffset, &scn, &cam);
-}
-void MuJoCoWrapper::updateFigData(){
-
-}
-void MuJoCoWrapper::render(){
+    mj_step(m, d);
     // get framebuffer viewport
     mjrRect viewport = {0, 0, 0, 0};
     mjrRect sensor_viewport = {0, 0, 350, 350};
     glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
 
     // update scene and render
-    mjv_updateScene(m, d, &opt, NULL, &cam, mjCAT_ALL, &scn);
-    mjr_render(viewport, &scn, &con);
+    mjv_updateScene(m, d, &mujoco_viewer::opt, NULL, &mujoco_viewer::cam, mjCAT_ALL, &mujoco_viewer::scn);
+    mjr_render(viewport, &mujoco_viewer::scn, &mujoco_viewer::con);
 
     // Show simulation status
     char *status = new char[100];
-    sprintf(status, "%s", !paused ? "Running" : "Stopped");
-    mjr_overlay(mjFONT_NORMAL, mjGRID_TOPLEFT, viewport, "Status: ", status, &con);
+    sprintf(status, "%s", !mujoco_viewer::paused ? "Running" : "Stopped");
+    mjr_overlay(mjFONT_NORMAL, mjGRID_TOPLEFT, viewport, "Status: ", status, &mujoco_viewer::con);
 
     // Show data figure
-//    update_fig_data();
-    mjr_figure(sensor_viewport, &figdata, &con);
+    updateFigData();
+    mjr_figure(sensor_viewport, &figdata, &mujoco_viewer::con);
     // swap OpenGL buffers (blocking call due to v-sync)
     glfwSwapBuffers(window);
 
     // process pending GUI events, call GLFW callbacks
     glfwPollEvents();
 }
+
+void MuJoCoWrapper::run() {
+    for (int i = 0; i < num_control_steps; i++) {
+        mj_step1(m, d);
+        // arm control
+        for (int i = 0; i < num_arm_dof; i++) {
+            // gravity compensation for arm
+            d->qfrc_applied[i] = d->qfrc_bias[i];
+            // velocity commands
+//            d->ctrl[i] = qDotCmd[i];
+        }
+        // gripper control
+        for (int i = num_arm_dof; i < num_arm_dof + num_gripper_dof; i++) {
+            d->qfrc_applied[i] = d->qfrc_bias[i];
+//            d->ctrl[i] = gripperCmd[i-6];
+        }
+
+        mj_step2(m, d);
+    }
+}
+

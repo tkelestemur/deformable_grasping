@@ -28,6 +28,16 @@ add_executable(env
     src/env.cpp
 )
 
+add_executable(test_mujoco_wrapper
+    tests/test_mujoco_wrapper.cpp
+    )
+target_link_libraries(test_mujoco_wrapper
+    ${MUJOCO_DIR}/bin/libmujoco200.so
+    ${MUJOCO_DIR}/bin/libglew.so
+    ${MUJOCO_DIR}/bin/libglfw.so.3
+    GL mujoco_wrapper)
+#target_link_libraries(test_mujoco_wrapper mujoco_wrapper)
+
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
   target_link_libraries(env
           ${MUJOCO_DIR}/bin/libmujoco200.so
