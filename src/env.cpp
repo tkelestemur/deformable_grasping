@@ -38,7 +38,7 @@ mjtNum transEEFVel = 0.25;
 
 
 
-void reset(void) {
+void reset() {
     mj_resetData(m, d);
     double armQInit[6] = {0.0, -0.90, 0.90, 0.0, mjPI / 2, -mjPI / 2};
     for (int j = 0; j < 6; j++) {
@@ -149,7 +149,7 @@ void scroll(GLFWwindow *window, double xoffset, double yoffset) {
     mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05 * yoffset, &scn, &cam);
 }
 
-void init_mujoco(void) {
+void init_mujoco() {
     // activate software
     const char *mjKeyPath = std::getenv("MUJOCO_KEY");
     std::cout << "Key Path: " << mjKeyPath << std::endl;
@@ -173,7 +173,7 @@ void init_mujoco(void) {
 
 }
 
-void init_rendering(void) {
+void init_rendering() {
 
     // init GLFW
     if (!glfwInit())
@@ -288,7 +288,7 @@ void render() {
 
 }
 
-void kill(void) {
+void kill() {
     //free visualization storage
     mjv_freeScene(&scn);
     mjr_freeContext(&con);

@@ -21,6 +21,9 @@ include_directories(
 #add_library(spnav_wrapper src/spnav_wrapper.cpp)
 #target_link_libraries(spnav_wrapper spnav X11)
 
+add_library(mujoco_wrapper src/mujoco_wrapper.cpp)
+#target_link_libraries(mujoco_wrapper)
+
 add_executable(env
     src/env.cpp
 )
@@ -31,10 +34,20 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
           ${MUJOCO_DIR}/bin/libglew.so
           ${MUJOCO_DIR}/bin/libglfw.so.3
           GL)
+
+  target_link_libraries(mujoco_wrapper
+          ${MUJOCO_DIR}/bin/libmujoco200.so
+          ${MUJOCO_DIR}/bin/libglew.so
+          ${MUJOCO_DIR}/bin/libglfw.so.3
+          GL)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   target_link_libraries(env
       ${MUJOCO_DIR}/bin/libmujoco200.dylib
       ${MUJOCO_DIR}/bin/libglfw.3.dylib)
+
+  target_link_libraries(mujoco_wrapper
+          ${MUJOCO_DIR}/bin/libmujoco200.dylib
+          ${MUJOCO_DIR}/bin/libglfw.3.dylib)
 endif()
 
 
