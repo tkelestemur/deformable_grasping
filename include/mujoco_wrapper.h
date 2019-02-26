@@ -3,10 +3,18 @@
 
 #include <iostream>
 #include <cstring>
+#include <Eigen/Core>
+#include <Eigen/Dense>
 
 // MuJoCo headers
 #include "mujoco.h"
 #include "glfw3.h"
+
+//namespace mujoco_utils {
+//    static mjVecToEigenVec(mjtNum *in, Eigen::VectorXd &out){
+//
+//    }
+//}
 
 namespace mujoco_viewer {
     // mouse interaction
@@ -25,54 +33,49 @@ namespace mujoco_viewer {
     static mjrContext con;
 
     // eef control flags
-// up, down, left, right, forward, backward;
-    static mjtNum eefCmd[6];
-    static mjtNum gripperCmd[2];
-    static mjtNum transEEFVel;
+    static mjtNum transEEFVel = 0.1;
 
     static void keyboard(GLFWwindow *window, int key, int scancode, int act, int mods) {
-
         if (act == GLFW_PRESS) {
             switch (key) {
                 case GLFW_KEY_BACKSPACE:
-//                reset();
+                    d->userdata[8] = 2;
                     break;
                 case GLFW_KEY_SPACE:
-                    paused = !paused;
+                    d->userdata[8] = 1;
                     break;
-                case GLFW_KEY_PAGE_UP:
-                    eefCmd[2] = transEEFVel;
+                case GLFW_KEY_APOSTROPHE:
+                    d->userdata[2] = transEEFVel;
                     break;
-                case GLFW_KEY_PAGE_DOWN:
-                    eefCmd[2] = -transEEFVel;
+                case GLFW_KEY_SLASH:
+                    d->userdata[2] = -transEEFVel;
                     break;
                 case GLFW_KEY_UP:
-                    eefCmd[0] = transEEFVel;
+                    d->userdata[0] = transEEFVel;
                     break;
                 case GLFW_KEY_DOWN:
-                    eefCmd[0] = -transEEFVel;
+                    d->userdata[0] = -transEEFVel;
                     break;
                 case GLFW_KEY_LEFT:
-                    eefCmd[1] = transEEFVel;
+                    d->userdata[1] = transEEFVel;
                     break;
                 case GLFW_KEY_RIGHT:
-                    eefCmd[1] = -transEEFVel;
+                    d->userdata[1] = -transEEFVel;
                     break;
                 case GLFW_KEY_C:
-                    gripperCmd[0] = -0.1;
-                    gripperCmd[1] = -0.1;
+                    d->userdata[6] = -0.1;
+                    d->userdata[7] = -0.1;
                     break;
                 case GLFW_KEY_O:
-                    gripperCmd[0] = 0.1;
-                    gripperCmd[1] = 0.1;
+                    d->userdata[6] = 0.1;
+                    d->userdata[7] = 0.1;
                     break;
                 default:
                     mju_warning("Unkown keyboard command!");
                     break;
             }
         } else if (act == GLFW_RELEASE) {
-            mju_zero(eefCmd, 6);
-            mju_zero(gripperCmd, 2);
+            mju_zero(d->userdata, 8);
         }
     }
 
@@ -135,24 +138,31 @@ public:
 
     void updateFigData();
 
+    void setControl(const Eigen::VectorXd &armCtrl, const Eigen::VectorXd &gripperCtrl);
+
     void render();
 
     void reset();
 
     void run();
 
+    Eigen::VectorXd getEEFCmd();
+
+    Eigen::VectorXd getGripperCmd();
+
+    Eigen::VectorXd eefVelToQDot(const Eigen::VectorXd &eefVelCmd);
+
 
 private:
-
-    // MuJoCo data structures
-    mjModel *m = NULL;                  // MuJoCo model
-    mjData *d = NULL;                   // MuJoCo data
-    // custom GPU context
+    mjModel *m = NULL;
+    mjData *d = NULL;
+    int nv;
     mjvFigure figdata;
     GLFWwindow *window = NULL;
     bool view_flag = true;
-    int num_control_steps;
-    int num_arm_dof, num_gripper_dof;
+    int num_control_steps, num_arm_dof, num_gripper_dof;
+    int eefBodyIdx, wideFingerJntIdx, narrowFingerJntIdx;
+    Eigen::VectorXd armCtrl, gripperCtrl;
 };
 
 

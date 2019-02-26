@@ -17,17 +17,25 @@ MuJoCoWrapper::MuJoCoWrapper(bool view) {
 
     // make data
     d = mj_makeData(m);
+    nv = m->nv;
 
-    std::cout << "# of DoF: " << m->nv << " # of Actuators: " << m->nu << " # of Coordinates: " << m->nq << std::endl;
+    std::cout << "# of DoF: " << m->nv << " # of Actuators: " << m->nu
+    << " # of Coordinates: " << m->nq << std::endl;
 
     if (view_flag) {
         mujoco_viewer::m = m;
+        mujoco_viewer::d = d;
         initRendering();
     }
 
+    eefBodyIdx = mj_name2id(m, mjOBJ_BODY, "tool0");
+    wideFingerJntIdx = mj_name2id(m, mjOBJ_JOINT, "wide_finger_joint");
+    narrowFingerJntIdx = mj_name2id(m, mjOBJ_JOINT, "narrow_finger_joint");
     num_control_steps = 10;
     num_arm_dof = 6;
     num_gripper_dof = 2;
+
+    mju_zero(d->userdata, 6);
 }
 
 MuJoCoWrapper::~MuJoCoWrapper() {
@@ -55,7 +63,7 @@ bool MuJoCoWrapper::initRendering() {
     }
 
     // create window, make OpenGL context current, request v-sync
-    window = glfwCreateWindow(1400, 1000, "", NULL, NULL);
+    window = glfwCreateWindow(1080, 900, "", NULL, NULL);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
@@ -128,9 +136,6 @@ void MuJoCoWrapper::reset() {
 
 void MuJoCoWrapper::updateFigData() {
 //    figdata.linepnt[0] = 100;
-    int wideFingerJntIdx = mj_name2id(m, mjOBJ_JOINT, "wide_finger_joint");
-    int narrowFingerJntIdx = mj_name2id(m, mjOBJ_JOINT, "narrow_finger_joint");
-
     // shift data
     int pnt = mjMIN(201, figdata.linepnt[0] + 1);
     int pnt_2 = mjMIN(201, figdata.linepnt[1] + 1);
@@ -178,7 +183,14 @@ void MuJoCoWrapper::render() {
 
     // process pending GUI events, call GLFW callbacks
     glfwPollEvents();
+
 }
+
+void MuJoCoWrapper::setControl(const Eigen::VectorXd &arm, const Eigen::VectorXd &gripper) {
+    armCtrl = arm;
+    gripperCtrl = gripper;
+}
+
 
 void MuJoCoWrapper::run() {
     for (int i = 0; i < num_control_steps; i++) {
@@ -188,15 +200,53 @@ void MuJoCoWrapper::run() {
             // gravity compensation for arm
             d->qfrc_applied[i] = d->qfrc_bias[i];
             // velocity commands
-//            d->ctrl[i] = qDotCmd[i];
+            d->ctrl[i] = armCtrl[i];
         }
         // gripper control
         for (int i = num_arm_dof; i < num_arm_dof + num_gripper_dof; i++) {
             d->qfrc_applied[i] = d->qfrc_bias[i];
-//            d->ctrl[i] = gripperCmd[i-6];
+            d->ctrl[i] = gripperCtrl[i-6];
         }
 
         mj_step2(m, d);
     }
+}
+
+Eigen::VectorXd MuJoCoWrapper::getEEFCmd() {
+    Eigen::VectorXd eefCmd(num_arm_dof);
+    for (int i = 0; i < num_arm_dof; ++i) {
+        eefCmd(i) = d->userdata[i];
+    }
+    return eefCmd;
+}
+
+Eigen::VectorXd MuJoCoWrapper::getGripperCmd() {
+    Eigen::VectorXd gripperCmd(2);
+    gripperCmd(0) = d->userdata[6];
+    gripperCmd(1) = d->userdata[7];
+    return gripperCmd;
+}
+
+Eigen::VectorXd MuJoCoWrapper::eefVelToQDot(const Eigen::VectorXd &eefVelCmd) {
+
+    mjtNum *eefJacPosMJ = mj_stackAlloc(d, 3 * nv);
+    mjtNum *eefJacRotMJ = mj_stackAlloc(d, 3 * nv);
+    mjtNum *armQDotCmdMJ = mj_stackAlloc(d, nv);
+
+    mj_jacBody(m, d, eefJacPosMJ, eefJacRotMJ, eefBodyIdx);
+
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> eefJacPos, eefJacRot;
+    eefJacPos = Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(eefJacPosMJ, 3, nv);
+    eefJacRot = Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(eefJacRotMJ, 3, nv);
+    Eigen::Matrix<double, 6, 6, Eigen::RowMajor> jacFull, jacFullInv;
+
+    jacFull << eefJacPos.block<3,6>(0,0), eefJacRot.block<3,6>(0,0);
+
+    jacFullInv = jacFull.inverse();
+    mju_mulMatVec(armQDotCmdMJ, jacFullInv.data(), eefVelCmd.data(), 6, 6);
+
+    Eigen::VectorXd armQDotCmd = Eigen::Map<Eigen::VectorXd>(armQDotCmdMJ, 6);
+    return armQDotCmd;
+//    armQDotCmd = Eigen::VectorXd(armQDotCmdMJ);
 }
 
