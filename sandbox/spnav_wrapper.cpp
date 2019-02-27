@@ -1,4 +1,4 @@
-#include <spnav_wrapper.h>
+#include "spnav_wrapper.h"
 
 namespace spnav_wrapper{
     spnav_event sev;

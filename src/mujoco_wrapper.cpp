@@ -35,6 +35,8 @@ MuJoCoWrapper::MuJoCoWrapper(bool view) {
     num_arm_dof = 6;
     num_gripper_dof = 2;
 
+    armCtrl.resize(num_arm_dof);
+    gripperCtrl.resize(num_gripper_dof);
     mju_zero(d->userdata, 6);
 }
 
@@ -72,6 +74,8 @@ bool MuJoCoWrapper::initRendering() {
     mujoco_viewer::cam.distance = 5;
     mjv_defaultOption(&mujoco_viewer::opt);
     mujoco_viewer::opt.frame = mjFRAME_WORLD; // Show the world frame
+    mujoco_viewer::opt.jointgroup[0] = 1;
+    mujoco_viewer::opt.flags[mjVIS_CONTACTPOINT] = 1;
     mjv_defaultScene(&mujoco_viewer::scn);
     mjr_defaultContext(&mujoco_viewer::con);
 
@@ -126,8 +130,10 @@ bool MuJoCoWrapper::initRendering() {
 void MuJoCoWrapper::reset() {
     mj_resetData(m, d);
     double armQInit[6] = {0.0, -0.90, 0.90, 0.0, mjPI / 2, -mjPI / 2};
-    for (int j = 0; j < 6; j++) {
-        d->qpos[j] = armQInit[j];
+    double qPosGrasp[8] = {-0.18368017, -0.76765977, 1.60432432,
+                           -0.9, 1.39290778, -1.57170523, 0.3, 0.3};
+    for (int j = 0; j < 8; j++) {
+        d->qpos[j] = qPosGrasp[j];
     }
 //    d->qpos[mj_name2id(m, mjOBJ_JOINT, "narrow_finger_joint")] = 0.5;
 //    d->qpos[mj_name2id(m, mjOBJ_JOINT, "wide_finger_joint")] = 0.5;
@@ -212,6 +218,14 @@ void MuJoCoWrapper::run() {
     }
 }
 
+double MuJoCoWrapper::getSimTime() {
+    return d->time;
+}
+
+void MuJoCoWrapper::printData() {
+    std::cout << "object mass: " << m->body_mass[12] << std::endl;
+}
+
 Eigen::VectorXd MuJoCoWrapper::getEEFCmd() {
     Eigen::VectorXd eefCmd(num_arm_dof);
     for (int i = 0; i < num_arm_dof; ++i) {
@@ -250,3 +264,12 @@ Eigen::VectorXd MuJoCoWrapper::eefVelToQDot(const Eigen::VectorXd &eefVelCmd) {
 //    armQDotCmd = Eigen::VectorXd(armQDotCmdMJ);
 }
 
+void MuJoCoWrapper::setObjectMass(const double mass) {
+    m->body_mass[12] = mass;
+}
+
+void MuJoCoWrapper::setObjectStiffness(const double k) {
+//    for (int i = 14; i < ; ++i) {
+//
+//    }
+}

@@ -146,6 +146,14 @@ public:
 
     void run();
 
+    double getSimTime();
+
+    void setObjectMass(const double mass);
+
+    void setObjectStiffness(const double k);
+
+    void printData();
+
     Eigen::VectorXd getEEFCmd();
 
     Eigen::VectorXd getGripperCmd();
