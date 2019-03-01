@@ -74,16 +74,16 @@ bool MuJoCoWrapper::initRendering() {
     mujoco_viewer::cam.distance = 5;
     mjv_defaultOption(&mujoco_viewer::opt);
     mujoco_viewer::opt.frame = mjFRAME_WORLD; // Show the world frame
-    mujoco_viewer::opt.jointgroup[0] = 1;
-    mujoco_viewer::opt.flags[mjVIS_CONTACTPOINT] = 1;
+    mujoco_viewer::opt.flags[mjVIS_CONTACTPOINT] = 2;
+//    mujoco_viewer::opt.flags[mjVIS_JOINT] = 1;
     mjv_defaultScene(&mujoco_viewer::scn);
     mjr_defaultContext(&mujoco_viewer::con);
 
     // data figure settings
     mjv_defaultFigure(&figdata);
     strcpy(figdata.title, "Wide-Finger Joint Torque");
-    figdata.flg_extend = false;
-//    figdata.flg_legend = true;
+    figdata.flg_extend = true;
+    figdata.flg_legend = true;
     figdata.figurergba[2] = 0.2f;
     figdata.figurergba[3] = 0.5f;
     figdata.gridsize[0] = 2;
@@ -91,27 +91,33 @@ bool MuJoCoWrapper::initRendering() {
 
     figdata.range[0][0] = -100;
     figdata.range[0][1] = 0;
-    figdata.range[1][0] = -4;
-    figdata.range[1][1] = 4;
+    figdata.range[1][0] = -5;
+    figdata.range[1][1] = 5;
 
     figdata.linergb[0][0] = 1.0;
     figdata.linergb[0][1] = 0.0;
     figdata.linergb[0][2] = 0.0;
 
-
-    strcpy(figdata.linename[0], "actuator torque");
-    strcpy(figdata.linename[1], "external torque");
-//    strcpy(figdata.linename[2], "inverse torque");
     figdata.linergb[1][0] = 0.0;
     figdata.linergb[1][1] = 1.0;
     figdata.linergb[1][2] = 0.0;
+
+    figdata.linergb[2][0] = 0.0;
+    figdata.linergb[2][1] = 0.0;
+    figdata.linergb[2][2] = 1.0;
+
+    strcpy(figdata.linename[0], "actuator torque");
+    strcpy(figdata.linename[1], "passive torque");
+    strcpy(figdata.linename[2], "joint angle");
+
     figdata.linewidth[0] = 1.0;
     figdata.linewidth[1] = 1.0;
+    figdata.linewidth[2] = 1.0;
 
     for (int i = 0; i < mjMAXLINEPNT; i++) {
         figdata.linedata[0][2 * i] = (float) -i;
         figdata.linedata[1][2 * i] = (float) -i;
-//        figdata.linedata[2][2*i] = (float)-i;
+        figdata.linedata[2][2 * i] = (float) -i;
     }
 
     // create scene and context
@@ -145,28 +151,26 @@ void MuJoCoWrapper::updateFigData() {
     // shift data
     int pnt = mjMIN(201, figdata.linepnt[0] + 1);
     int pnt_2 = mjMIN(201, figdata.linepnt[1] + 1);
-//    int pnt_3 = mjMIN(201, figdata.linepnt[2]+1);
+    int pnt_3 = mjMIN(201, figdata.linepnt[2] + 1);
     for (int i = pnt - 1; i > 0; i--) {
         figdata.linedata[0][2 * i + 1] = figdata.linedata[0][2 * i - 1];
         figdata.linedata[1][2 * i + 1] = figdata.linedata[1][2 * i - 1];
-//        figdata.linedata[2][2*i+1] = figdata.linedata[2][2*i-1];
+        figdata.linedata[2][2 * i + 1] = figdata.linedata[2][2 * i - 1];
     }
 
     // assign new
     figdata.linepnt[0] = pnt;
     figdata.linepnt[1] = pnt_2;
-//    figdata.linepnt[2] = pnt_3;
+    figdata.linepnt[2] = pnt_3;
     figdata.linedata[0][1] = (float) d->qfrc_actuator[wideFingerJntIdx];
     figdata.linedata[1][1] = (float) d->qfrc_passive[wideFingerJntIdx];
-//    figdata.linedata[2][1] = (float)d->qfrc_inverse[wideFingerJntIdx];
+    figdata.linedata[2][1] = (float) d->qpos[wideFingerJntIdx];
 }
 
 void MuJoCoWrapper::render() {
     if (!view_flag || glfwWindowShouldClose(window)) {
         exit(1);
     }
-
-    mj_step(m, d);
     // get framebuffer viewport
     mjrRect viewport = {0, 0, 0, 0};
     mjrRect sensor_viewport = {0, 0, 350, 350};
@@ -178,8 +182,8 @@ void MuJoCoWrapper::render() {
 
     // Show simulation status
     char *status = new char[100];
-    sprintf(status, "%s", !mujoco_viewer::paused ? "Running" : "Stopped");
-    mjr_overlay(mjFONT_NORMAL, mjGRID_TOPLEFT, viewport, "Status: ", status, &mujoco_viewer::con);
+    sprintf(status, "%s\n%-5.4f", !mujoco_viewer::paused ? "Running" : "Stopped", d->time);
+    mjr_overlay(mjFONT_NORMAL, mjGRID_TOPLEFT, viewport, "Status:\nTime:", status, &mujoco_viewer::con);
 
     // Show data figure
     updateFigData();
@@ -199,22 +203,25 @@ void MuJoCoWrapper::setControl(const Eigen::VectorXd &arm, const Eigen::VectorXd
 
 
 void MuJoCoWrapper::run() {
-    for (int i = 0; i < num_control_steps; i++) {
-        mj_step1(m, d);
-        // arm control
-        for (int i = 0; i < num_arm_dof; i++) {
-            // gravity compensation for arm
-            d->qfrc_applied[i] = d->qfrc_bias[i];
-            // velocity commands
-            d->ctrl[i] = armCtrl[i];
+    if(!mujoco_viewer::paused){
+        for (int i = 0; i < num_control_steps; i++) {
+            mj_step1(m, d);
+            // arm control
+            for (int j = 0; j < num_arm_dof; j++) {
+                // gravity compensation for arm
+                d->qfrc_applied[j] = d->qfrc_bias[j];
+                // velocity commands
+                d->ctrl[j] = armCtrl[j];
+            }
+            // gripper control
+            for (int k = num_arm_dof; k < num_arm_dof + num_gripper_dof; k++) {
+                // gravity compensation for gripper
+                d->qfrc_applied[k] = d->qfrc_bias[k];
+                // torque commands
+                d->ctrl[k] = gripperCtrl[k-6];
+            }
+            mj_step2(m, d);
         }
-        // gripper control
-        for (int i = num_arm_dof; i < num_arm_dof + num_gripper_dof; i++) {
-            d->qfrc_applied[i] = d->qfrc_bias[i];
-            d->ctrl[i] = gripperCtrl[i-6];
-        }
-
-        mj_step2(m, d);
     }
 }
 
@@ -223,7 +230,14 @@ double MuJoCoWrapper::getSimTime() {
 }
 
 void MuJoCoWrapper::printData() {
-    std::cout << "object mass: " << m->body_mass[12] << std::endl;
+//    std::cout << "object mass: " << m->body_mass[12] << std::endl;
+
+    std::cout << "number of contacts: " << d->ncon << std::endl;
+    for (int i = 0; i < d->ncon; i++) {
+        std::cout << "contatct " << i << " geom1: " << mj_id2name(m, mjOBJ_GEOM, d->contact[i].geom1)
+        << " geom2: " << mj_id2name(m, mjOBJ_GEOM, d->contact[i].geom2) << std::endl;
+
+    }
 }
 
 Eigen::VectorXd MuJoCoWrapper::getEEFCmd() {

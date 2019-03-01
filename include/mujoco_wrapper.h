@@ -10,15 +10,10 @@
 #include "mujoco.h"
 #include "glfw3.h"
 
-//namespace mujoco_utils {
-//    static mjVecToEigenVec(mjtNum *in, Eigen::VectorXd &out){
-//
-//    }
-//}
 
 namespace mujoco_viewer {
     // mouse interaction
-    static bool paused;
+    static bool paused = false;
     static bool button_left;
     static bool button_middle;
     static bool button_right;
@@ -39,10 +34,9 @@ namespace mujoco_viewer {
         if (act == GLFW_PRESS) {
             switch (key) {
                 case GLFW_KEY_BACKSPACE:
-                    d->userdata[8] = 2;
                     break;
                 case GLFW_KEY_SPACE:
-                    d->userdata[8] = 1;
+                    paused = !paused;
                     break;
                 case GLFW_KEY_APOSTROPHE:
                     d->userdata[2] = transEEFVel;
@@ -164,7 +158,7 @@ public:
 private:
     mjModel *m = NULL;
     mjData *d = NULL;
-    int nv;
+    int nv, nu, nq;
     mjvFigure figdata;
     GLFWwindow *window = NULL;
     bool view_flag = true;
