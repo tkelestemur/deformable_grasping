@@ -163,7 +163,7 @@ private:
     GLFWwindow *window = NULL;
     bool view_flag = true;
     int num_control_steps, num_arm_dof, num_gripper_dof;
-    int eefBodyIdx, wideFingerJntIdx, narrowFingerJntIdx;
+    int eefBodyIdx, wideFingerJntIdx, narrowFingerJntIdx, wideFinderActIdx;
     Eigen::VectorXd armCtrl, gripperCtrl;
 };
 

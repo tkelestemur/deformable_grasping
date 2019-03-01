@@ -31,9 +31,10 @@ int main(){
             }
 
             mjw.run();
+//            mjw.printData();
             mjw.render();
 //        std::cout  " | sim time: " << simTime << std::endl;
-    //        usleep(50000);
+//            usleep(100000);
         }
 //        mjw.printData();
 

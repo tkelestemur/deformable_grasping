@@ -31,6 +31,9 @@ MuJoCoWrapper::MuJoCoWrapper(bool view) {
     eefBodyIdx = mj_name2id(m, mjOBJ_BODY, "tool0");
     wideFingerJntIdx = mj_name2id(m, mjOBJ_JOINT, "wide_finger_joint");
     narrowFingerJntIdx = mj_name2id(m, mjOBJ_JOINT, "narrow_finger_joint");
+    wideFinderActIdx = mj_name2id(m, mjOBJ_ACTUATOR, "wide_finger_pos");
+
+    std::cout << "jnt idx : " <<wideFingerJntIdx << " jnt qpos adr: " << m->jnt_qposadr[wideFingerJntIdx] << std::endl;
     num_control_steps = 10;
     num_arm_dof = 6;
     num_gripper_dof = 2;
@@ -164,7 +167,8 @@ void MuJoCoWrapper::updateFigData() {
     figdata.linepnt[2] = pnt_3;
     figdata.linedata[0][1] = (float) d->qfrc_actuator[wideFingerJntIdx];
     figdata.linedata[1][1] = (float) d->qfrc_passive[wideFingerJntIdx];
-    figdata.linedata[2][1] = (float) d->qpos[wideFingerJntIdx];
+
+    figdata.linedata[2][1] = (float) d->qpos[m->jnt_qposadr[wideFingerJntIdx]];
 }
 
 void MuJoCoWrapper::render() {
@@ -216,12 +220,15 @@ void MuJoCoWrapper::run() {
             // gripper control
             for (int k = num_arm_dof; k < num_arm_dof + num_gripper_dof; k++) {
                 // gravity compensation for gripper
-                d->qfrc_applied[k] = d->qfrc_bias[k];
+//                d->qfrc_applied[k] = d->qfrc_bias[k];
                 // torque commands
                 d->ctrl[k] = gripperCtrl[k-6];
             }
+            printData();
             mj_step2(m, d);
         }
+
+
     }
 }
 
@@ -230,14 +237,17 @@ double MuJoCoWrapper::getSimTime() {
 }
 
 void MuJoCoWrapper::printData() {
+    mj_inverse(m, d);
+    std::cout << "pos ref: " << d->ctrl[wideFinderActIdx] << " | current pos: " << d->qpos[m->jnt_qposadr[wideFingerJntIdx]]
+    << std::endl << "actuator torque: " << d->qfrc_actuator[wideFingerJntIdx] << " | passive torque: " << d->qfrc_passive[wideFingerJntIdx]
+    <<" | inverse torque: " << d->qfrc_inverse[wideFingerJntIdx] << " | bias torque: " << d->qfrc_bias[wideFingerJntIdx] << std::endl;
 //    std::cout << "object mass: " << m->body_mass[12] << std::endl;
 
     std::cout << "number of contacts: " << d->ncon << std::endl;
-    for (int i = 0; i < d->ncon; i++) {
-        std::cout << "contatct " << i << " geom1: " << mj_id2name(m, mjOBJ_GEOM, d->contact[i].geom1)
-        << " geom2: " << mj_id2name(m, mjOBJ_GEOM, d->contact[i].geom2) << std::endl;
-
-    }
+//    for (int i = 0; i < d->ncon; i++) {
+//        std::cout << "contatct " << i << " geom1: " << mj_id2name(m, mjOBJ_GEOM, d->contact[i].geom1)
+//        << " geom2: " << mj_id2name(m, mjOBJ_GEOM, d->contact[i].geom2) << std::endl;
+//    }
 }
 
 Eigen::VectorXd MuJoCoWrapper::getEEFCmd() {
