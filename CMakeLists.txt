@@ -47,6 +47,16 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   target_link_libraries(mujoco_wrapper
           ${MUJOCO_DIR}/bin/libmujoco200.dylib
           ${MUJOCO_DIR}/bin/libglfw.3.dylib)
+
+  target_link_libraries(keyboard_teleop
+          ${MUJOCO_DIR}/bin/libmujoco200.dylib
+          ${MUJOCO_DIR}/bin/libglfw.3.dylib
+          mujoco_wrapper)
+
+  target_link_libraries(collect_data
+          ${MUJOCO_DIR}/bin/libmujoco200.dylib
+          ${MUJOCO_DIR}/bin/libglfw.3.dylib
+          mujoco_wrapper)
 endif()
 
 

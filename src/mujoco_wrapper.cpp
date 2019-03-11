@@ -220,9 +220,9 @@ void MuJoCoWrapper::run() {
             // gripper control
             for (int k = num_arm_dof; k < num_arm_dof + num_gripper_dof; k++) {
                 // gravity compensation for gripper
-//                d->qfrc_applied[k] = d->qfrc_bias[k];
+                d->qfrc_applied[k] = d->qfrc_bias[k];
                 // torque commands
-                d->ctrl[k] = gripperCtrl[k-6];
+//                d->ctrl[k] = gripperCtrl[k-6];
             }
             printData();
             mj_step2(m, d);
