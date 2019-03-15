@@ -140,6 +140,8 @@ public:
 
     void run();
 
+    int checkGrasping();
+
     double getSimTime();
 
     void setObjectMass(const double mass);
@@ -147,6 +149,8 @@ public:
     void setObjectStiffness(const double k);
 
     void printData();
+
+    std::vector<double> getState();
 
     Eigen::VectorXd getEEFCmd();
 
@@ -165,6 +169,7 @@ private:
     int num_control_steps, num_arm_dof, num_gripper_dof;
     int eefBodyIdx, wideFingerJntIdx, narrowFingerJntIdx, wideFinderActIdx;
     Eigen::VectorXd armCtrl, gripperCtrl;
+    double objectStiffness;
 };
 
 

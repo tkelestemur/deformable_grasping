@@ -33,7 +33,6 @@ MuJoCoWrapper::MuJoCoWrapper(bool view) {
     narrowFingerJntIdx = mj_name2id(m, mjOBJ_JOINT, "narrow_finger_joint");
     wideFinderActIdx = mj_name2id(m, mjOBJ_ACTUATOR, "wide_finger_pos");
 
-    std::cout << "jnt idx : " <<wideFingerJntIdx << " jnt qpos adr: " << m->jnt_qposadr[wideFingerJntIdx] << std::endl;
     num_control_steps = 10;
     num_arm_dof = 6;
     num_gripper_dof = 2;
@@ -110,8 +109,8 @@ bool MuJoCoWrapper::initRendering() {
     figdata.linergb[2][2] = 1.0;
 
     strcpy(figdata.linename[0], "actuator torque");
-    strcpy(figdata.linename[1], "passive torque");
-    strcpy(figdata.linename[2], "joint angle");
+    strcpy(figdata.linename[1], "external torque");
+    strcpy(figdata.linename[2], "passive  torque");
 
     figdata.linewidth[0] = 1.0;
     figdata.linewidth[1] = 1.0;
@@ -140,7 +139,7 @@ void MuJoCoWrapper::reset() {
     mj_resetData(m, d);
     double armQInit[6] = {0.0, -0.90, 0.90, 0.0, mjPI / 2, -mjPI / 2};
     double qPosGrasp[8] = {-0.18368017, -0.76765977, 1.60432432,
-                           -0.9, 1.39290778, -1.57170523, 0.3, 0.3};
+                           -0.9, 1.39290778, -1.57170523, 0.4, 0.4};
     for (int j = 0; j < 8; j++) {
         d->qpos[j] = qPosGrasp[j];
     }
@@ -166,9 +165,8 @@ void MuJoCoWrapper::updateFigData() {
     figdata.linepnt[1] = pnt_2;
     figdata.linepnt[2] = pnt_3;
     figdata.linedata[0][1] = (float) d->qfrc_actuator[wideFingerJntIdx];
-    figdata.linedata[1][1] = (float) d->qfrc_passive[wideFingerJntIdx];
-
-    figdata.linedata[2][1] = (float) d->qpos[m->jnt_qposadr[wideFingerJntIdx]];
+    figdata.linedata[1][1] = (float) d->qfrc_constraint[wideFingerJntIdx];
+    figdata.linedata[2][1] = (float) d->qfrc_passive[wideFingerJntIdx];
 }
 
 void MuJoCoWrapper::render() {
@@ -186,8 +184,8 @@ void MuJoCoWrapper::render() {
 
     // Show simulation status
     char *status = new char[100];
-    sprintf(status, "%s\n%-5.4f", !mujoco_viewer::paused ? "Running" : "Stopped", d->time);
-    mjr_overlay(mjFONT_NORMAL, mjGRID_TOPLEFT, viewport, "Status:\nTime:", status, &mujoco_viewer::con);
+    sprintf(status, "%s\n%-5.4f\n%-5.4f", !mujoco_viewer::paused ? "Running" : "Stopped", d->time, objectStiffness);
+    mjr_overlay(mjFONT_NORMAL, mjGRID_TOPLEFT, viewport, "Status:\nTime:\nObject Stiffness", status, &mujoco_viewer::con);
 
     // Show data figure
     updateFigData();
@@ -213,22 +211,40 @@ void MuJoCoWrapper::run() {
             // arm control
             for (int j = 0; j < num_arm_dof; j++) {
                 // gravity compensation for arm
-                d->qfrc_applied[j] = d->qfrc_bias[j];
+                d->qfrc_applied[j] = d->qfrc_bias[j] - d->qfrc_constraint[j];
                 // velocity commands
                 d->ctrl[j] = armCtrl[j];
             }
             // gripper control
             for (int k = num_arm_dof; k < num_arm_dof + num_gripper_dof; k++) {
                 // gravity compensation for gripper
-//                d->qfrc_applied[k] = d->qfrc_bias[k];
+                d->qfrc_applied[k] = d->qfrc_bias[k];
                 // torque commands
                 d->ctrl[k] = gripperCtrl[k-6];
             }
-            printData();
             mj_step2(m, d);
         }
+    }
+}
 
+int MuJoCoWrapper::checkGrasping() {
+    bool fingerContact1 = false;
+    bool fingerContact2 = false;
+    for (int i = 0; i < d->ncon; i++) {
+        mjContact con = d->contact[i];
 
+        if (con.geom1 == mj_name2id(m, mjOBJ_GEOM, "narrow_finger_link") || con.geom2 == mj_name2id(m, mjOBJ_GEOM, "narrow_finger_link")){
+            fingerContact1 = true;
+        }
+
+        if (con.geom1 == mj_name2id(m, mjOBJ_GEOM, "wide_finger_link") || con.geom2 == mj_name2id(m, mjOBJ_GEOM, "wide_finger_link")){
+            fingerContact2 = true;
+        }
+    }
+    if(fingerContact1 && fingerContact2){
+        return 1;
+    }else{
+        return 0;
     }
 }
 
@@ -248,6 +264,19 @@ void MuJoCoWrapper::printData() {
 //        std::cout << "contatct " << i << " geom1: " << mj_id2name(m, mjOBJ_GEOM, d->contact[i].geom1)
 //        << " geom2: " << mj_id2name(m, mjOBJ_GEOM, d->contact[i].geom2) << std::endl;
 //    }
+}
+
+std::vector<double> MuJoCoWrapper::getState() {
+    std::vector<double> state;
+
+    state.push_back(d->qpos[wideFingerJntIdx]);
+    state.push_back(d->qpos[narrowFingerJntIdx]);
+    state.push_back(d->qvel[wideFingerJntIdx]);
+    state.push_back(d->qvel[narrowFingerJntIdx]);
+    state.push_back(d->qfrc_constraint[wideFingerJntIdx]);
+    state.push_back(d->qfrc_constraint[narrowFingerJntIdx]);
+
+    return state;
 }
 
 Eigen::VectorXd MuJoCoWrapper::getEEFCmd() {
@@ -293,7 +322,15 @@ void MuJoCoWrapper::setObjectMass(const double mass) {
 }
 
 void MuJoCoWrapper::setObjectStiffness(const double k) {
-//    for (int i = 14; i < ; ++i) {
-//
-//    }
+    objectStiffness = k;
+    for (int i = 0; i <m->njnt ; i++) {
+        const char *jntName = mj_id2name(m, mjOBJ_JOINT, i);
+        if (jntName == NULL){
+            continue;
+        }
+        std::string jntNameStr = jntName;
+        if (jntNameStr.substr(0, 5) == "SPNGJ"){
+            m->jnt_stiffness[i] = k;
+        }
+    }
 }
