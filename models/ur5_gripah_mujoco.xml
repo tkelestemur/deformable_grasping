@@ -36,18 +36,14 @@
                                         <site name="finger_center" pos="0.19 0 0" size="0.005" rgba=".1 .9 0 .8" type="sphere"/>
                                         <inertial pos="-0.020421 0 0" mass="0.18" diaginertia="1 1 1" />
                                         <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="wrist" />
-                                        <!--<sensor>-->
-                                            <!--<torque name="wide_finger_torque_sensor" />-->
-                                        <!--</sensor>-->
                                         <body name="wide_finger_link" pos="0.055 0 0" quat="0.70709 0.707092 0.00471388 -0.0047139">
                                             <inertial pos="0.056976 0.015337 -2.3122e-09" quat="0.653281 0.653281 -0.270598 -0.270598" mass="0.0167" diaginertia="1.01 1 0.99" />
-                                            <joint name="wide_finger_joint" pos="0 0 0" axis="0 0 1" limited="true" range="-1.0472 1.0472" damping="10" stiffness="0"/>
+                                            <joint name="wide_finger_joint" pos="0 0 0" axis="0 0 1" limited="true" range="-1.0472 1.0472" damping="5"/>
                                             <geom name="wide_finger_link" type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="wide_finger" />
                                         </body>
                                         <body name="narrow_finger_link" pos="0.055 0 0" quat="0.70709 0.707092 0.00471388 -0.0047139">
                                             <inertial pos="0.052556 0.013896 2.3305e-07" quat="0.653281 0.653281 -0.270598 -0.270598" mass="0.016641" diaginertia="1.03 1 0.97" />
-                                            <joint name="narrow_finger_joint" pos="0 0 0" axis="0 0 -1" limited="true" range="-1.0472 1.0472" damping="10" stiffness="0"/>
-
+                                            <joint name="narrow_finger_joint" pos="0 0 0" axis="0 0 -1" limited="true" range="-1.0472 1.0472" damping="5"/>
                                             <geom name="narrow_finger_link" type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="narrow_finger" />
                                         </body>
                                     </body>

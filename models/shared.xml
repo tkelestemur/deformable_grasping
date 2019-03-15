@@ -6,7 +6,7 @@
 
     <default>
         <light castshadow="false" diffuse="1 1 1" />
-        <joint armature="0" frictionloss="0" damping="5" />
+        <joint damping="5" />
         <!--<motor gear="0.8"/>-->
         <!--<velocity kv="50"/>-->
         <!--<position kp="5"/>-->
