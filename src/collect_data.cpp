@@ -8,7 +8,7 @@ int main(){
     MuJoCoWrapper mjWrapper(false);
     mjWrapper.reset();
 
-    Eigen::VectorXd armCtrlZero = Eigen::VectorXd::Zero(6);
+    Eigen::VectorXd armCtrlZero = Eigen::VectorXd::Zero(6); 
     Eigen::VectorXd eefCmdUp = Eigen::VectorXd::Zero(6); eefCmdUp[2] = 0.2;
     Eigen::Vector2d gripperCtrlClose(0, 0);
     Eigen::VectorXd armQDotCmd;
@@ -17,11 +17,11 @@ int main(){
     std::mt19937 gen{rd()};
     std::uniform_real_distribution<double> objectStifnessDist{0.0 , 100.0};
 
-    std::string dataPath = "/home/tarik/projects/ur_mujoco/data/states.csv";
+    std::string dataPath = "/home/tarik/projects/ur_mujoco/data/states_50k.csv";
 
     std::ofstream dataLogFile;
     dataLogFile.open(dataPath);
-    int num_runs = 100000;
+    int num_runs = 50000;
     double simTime = 0.0;
     for (int i = 1; i <= num_runs; i++) {
         if (i % 100 == 0){
