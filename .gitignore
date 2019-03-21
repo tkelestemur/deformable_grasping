@@ -3,4 +3,3 @@ build/
 cmake-*
 data/
 __pycache__
-checkpoints/

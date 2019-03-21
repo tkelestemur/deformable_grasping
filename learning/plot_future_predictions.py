@@ -16,8 +16,8 @@ model = CompositeModel(
     batch_first=True
 ).to(device)
 
-model.load_state_dict(torch.load('./checkpoints/checkpoint.pt'), strict=True)
-test_set = GraspDataset('train')
+model.load_state_dict(torch.load('./checkpoints/checkpoint_032019.pt'), strict=True)
+test_set = GraspDataset('test')
 data = test_set[7:8]
 
 input_data = data[:, :375, :]
@@ -38,20 +38,21 @@ def plot_future():
     input_real = data[:, :375, :].detach().cpu().numpy().squeeze()
     input_reco = decoded_output.detach().cpu().numpy().squeeze()
     input_reco = np.flip(input_reco, axis=0)
-
+    data_column = 3
     fig, axes = plt.subplots(2, 1)
     fig.suptitle('[Test: 5k]')
     fig.set_size_inches(12, 8)
-    axes[0].plot(np.linspace(0, 374, 375), input_real[:, 0])
-    axes[0].plot(np.linspace(0, 374, 375), input_reco[:, 0])
+    axes[0].plot(np.linspace(0, 374, 375), input_real[:, data_column])
+    axes[0].plot(np.linspace(0, 374, 375), input_reco[:, data_column])
     axes[0].set_title('Reconstruction')
-    # axes[0].set_xlabel('Number of Epochs')
+    # axes[0].set_ylim(0, 1.45)
     axes[0].set_ylabel('Finger 1 Angle')
     axes[0].legend(('ground_truth', 'prediction'))
 
-    axes[1].plot(np.linspace(375, 749, 375), future_real[:, 0])
-    axes[1].plot( np.linspace(375, 749, 375), future_pred[:, 0])
+    axes[1].plot(np.linspace(375, 749, 375), future_real[:, data_column])
+    axes[1].plot(np.linspace(375, 749, 375), future_pred[:, data_column])
     axes[1].set_title('Prediction')
+    # axes[1].set_ylim(0, 1.45)
     axes[1].set_xlabel('Timesteps')
     axes[1].set_ylabel('Finger 1 Angle')
     axes[1].legend(('ground_truth', 'prediction'))
@@ -59,8 +60,9 @@ def plot_future():
 
 
 def plot_future_reco():
+    pass
 
 
 if __name__ == '__main__':
     plot_future()
-    plot_future_reco()
+    # plot_future_reco()
