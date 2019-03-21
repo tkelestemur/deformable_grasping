@@ -70,7 +70,7 @@ class LSTMDecoder(nn.Module):
 
 class CompositeModel(nn.Module):
 
-    def __init__(self, input_size, hidden_size, sequence_length, num_layers, batch_first=True):
+    def __init__(self, input_size, hidden_size, sequence_length, num_layers, batch_first=True, loss_path=None):
 
         super(CompositeModel, self).__init__()
 
@@ -79,6 +79,7 @@ class CompositeModel(nn.Module):
         self.sequence_length = sequence_length
         self.num_layers = num_layers
         self.batch_firs = batch_first
+        self.loss_path = loss_path
 
         # Initialize an LSTM for encoder
         self.encoder_ = LSTMEncoder(
@@ -117,14 +118,12 @@ class CompositeModel(nn.Module):
     def train_model(self, num_epochs, data_loader_train, data_loader_valid, checkpoint_path,
                     lr=1e-3, weight_decay=0, sparsity_weight=0, device=torch.device('cpu')):
 
-        loss_recorder_column = ['epoch_id', 'train_reco_loss', 'train_pred_loss', 'train_loss', 'vali_reco_loss',
-                                'vali_pred_loss']
+        loss_recorder_column = ['epoch_id', 'train_reco_loss', 'train_pred_loss', 
+                                'train_loss', 'vali_reco_loss', 'vali_pred_loss']
         loss_recorder = DataRecorder(column=loss_recorder_column)
-        loss_path = "./loss/loss.csv"
 
         optimizer = optim.Adam(params=self.parameters(), lr=lr, weight_decay=weight_decay)
 
-        eval_device = torch.device("cpu")
         eval_model = CompositeModel(
             input_size=self.input_size,
             hidden_size=self.hidden_size,
@@ -179,8 +178,6 @@ class CompositeModel(nn.Module):
                 loss.backward()
                 optimizer.step()
 
-            # print("Epoch ID: {}, Reconstruction Loss: {}, Future Loss: {}, Total Loss: {}".format(epoch_i, reconstruction_loss, prediction_loss, loss))
-
             # save epoch checkpoint
             with open(checkpoint_path, 'wb') as f:
                 torch.save(self.state_dict(), f)
@@ -196,7 +193,7 @@ class CompositeModel(nn.Module):
                                   vali_reco_loss, vali_pred_loss]
 
             loss_recorder.append(epoch_recorder_row)
-            loss_recorder.save_to_csv(loss_path, index=False)
+            loss_recorder.save_to_csv(self.loss_path, index=False)
 
             epochs_counter = epoch_i + 1
 

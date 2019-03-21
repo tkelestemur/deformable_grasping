@@ -2,6 +2,7 @@
 #define MUJOCO_WRAPPER_H
 
 #include <iostream>
+#include <vector>
 #include <cstring>
 #include <Eigen/Core>
 #include <Eigen/Dense>

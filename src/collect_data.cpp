@@ -1,5 +1,6 @@
 #include <fstream>
 #include <mutex>
+#include <random>
 #include <mujoco_wrapper.h>
 
 int main(){

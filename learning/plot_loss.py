@@ -4,10 +4,10 @@ plt.style.use('ggplot')
 
 
 def plot_loss():
-    loss = pd.read_csv('./loss/loss.csv')
+    loss = pd.read_csv('./loss/loss_032019.csv')
 
     fig, axes = plt.subplots(2, 1)
-    fig.suptitle('[Training set: 20k - Validation set: 5k]')
+    fig.suptitle('[Training: 20k - Validation: 5k - Test: 5k]')
     fig.set_size_inches(12, 8)
     axes[0].plot(loss['train_reco_loss'])
     axes[0].plot(loss['vali_reco_loss'])

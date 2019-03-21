@@ -13,7 +13,8 @@ def train():
         hidden_size=256,
         sequence_length=375,
         num_layers=1,
-        batch_first=True
+        batch_first=True,
+        loss_path='./loss/loss_032019.csv'
     ).to(device)
 
     train_set = GraspDataset('train')
@@ -36,13 +37,13 @@ def train():
     )
 
     model.train_model(
-        num_epochs=1000,
+        num_epochs=1500,
         data_loader_train=data_loader_train,
         data_loader_valid=data_loader_valid,
-        checkpoint_path='./checkpoints/checkpoint.pt',
+        checkpoint_path='./checkpoints/checkpoint_032019.pt',
         lr=1e-3,
-        weight_decay=0,
-        sparsity_weight=0,
+        weight_decay=0.000001,
+        sparsity_weight=0.01,
         device=device
     )
 
