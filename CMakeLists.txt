@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(ur_mujoco)
+project(mujoco_wrapper)
 add_compile_options(-std=c++11)
 
 set(MUJOCO_DIR "$ENV{MUJOCO200_HOME}")

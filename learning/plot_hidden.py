@@ -18,7 +18,7 @@ model = CompositeModel(
     batch_first=True
 ).to(device)
 
-model.load_state_dict(torch.load('../checkpoints/checkpoint.pt'), strict=True)
+model.load_state_dict(torch.load('./checkpoints/checkpoint_032019.pt'), strict=True)
 test_set = GraspDataset('test')
 
 data_loader_test = DataLoader(
